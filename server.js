@@ -18,7 +18,7 @@ const express = require('express');
 const axios = require('axios');
 const path = require('path');
 const { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, Keypair } = require('@solana/web3.js');
-const { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createTransferInstruction, createAssociatedTokenAccountInstruction, createMint, createSetAuthorityInstruction, AuthorityType } = require('@solana/spl-token');
+const { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createTransferInstruction, createAssociatedTokenAccountInstruction, createMint, createSetAuthorityInstruction, AuthorityType, createMintToInstruction } = require('@solana/spl-token');
 
 // 3. Initialize Express and Solana Connection
 const app = express();
