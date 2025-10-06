@@ -23,7 +23,7 @@
             align-items: center;
             gap: .5rem;
         }
-        /* Wallet Modal Styles */
+        /* Wallet Modal Styles - Dark Theme & Mobile Compatible */
         .wallet-modal-overlay {
             display: none;
             position: fixed;
@@ -31,32 +31,47 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.8);
             z-index: 1000;
             justify-content: center;
             align-items: center;
+            backdrop-filter: blur(5px);
         }
         .wallet-modal-content {
-            background: white;
+            background: #1a1a1a;
             padding: 20px;
-            border-radius: 10px;
-            width: 400px;
-            max-width: 90%;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
             text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            color: #fff;
         }
         .wallet-modal-header h3 {
             margin: 0 0 20px;
             font-size: 24px;
+            color: #00FFA3;
         }
         .wallet-option {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px;
+            padding: 15px;
             margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            background: #222;
+            border-radius: 10px;
             cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .wallet-option:hover {
+            background: #2a2a2a;
+            transform: translateY(-2px);
+        }
+        .wallet-option .wallet-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
         }
         .status-dot {
             width: 10px;
@@ -64,24 +79,31 @@
             border-radius: 50%;
             display: inline-block;
         }
-        .status-dot.installed { background: green; }
-        .status-dot.not-installed { background: red; }
-        .status-text { margin-left: 10px; }
-        .status-installed { color: green; }
-        .status-not-installed { color: red; }
+        .status-dot.installed { background: #00FF7F; }
+        .status-dot.not-installed { background: #FF4500; }
+        .status-text { margin-left: 10px; color: #ccc; }
+        .status-installed { color: #00FF7F; }
+        .status-not-installed { color: #FF4500; }
         .hidden { display: none; }
         .active { display: block; }
-        .locked { pointer-events: none; }
+        .locked { pointer-events: none; opacity: 0.6; }
         .wallet-loading-spinner img {
             width: 50px;
             height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
         .wallet-loading-title {
             font-size: 20px;
             margin: 10px 0;
+            color: #00FFA3;
         }
         .wallet-loading-subtitle {
             font-size: 16px;
+            color: #bbb;
         }
         .rejected { opacity: 0.5; }
         .shake {
@@ -98,10 +120,27 @@
             margin-top: 20px;
             padding: 10px 20px;
             background: #333;
-            color: white;
+            color: #fff;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        #close-modal:hover {
+            background: #444;
+        }
+        @media (max-width: 768px) {
+            .wallet-modal-content {
+                width: 85%;
+                padding: 15px;
+            }
+            .wallet-option {
+                padding: 12px;
+                font-size: 14px;
+            }
+            .wallet-modal-header h3 {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
@@ -114,37 +153,44 @@
             </div>
             <div id="wallet-options">
                 <div class="wallet-option" data-wallet="phantom">
+                    <img src="https://phantom.app/img/logo.png" alt="Phantom" class="wallet-icon">
                     <span id="phantom-status"></span>
                     <button id="phantom-wallet">Phantom</button>
                 </div>
                 <div class="wallet-option" data-wallet="torus">
+                    <img src="https://tor.us/assets/images/logo/torus-logo.svg" alt="Torus" class="wallet-icon">
                     <span id="torus-status"></span>
                     <button id="torus-wallet">Torus</button>
                 </div>
                 <div class="wallet-option" data-wallet="ledger">
+                    <img src="https://ledger.com/wp-content/uploads/2021/01/ledger-logo-blue.png" alt="Ledger" class="wallet-icon">
                     <span id="ledger-status"></span>
                     <button id="ledger-wallet">Ledger</button>
                 </div>
                 <div class="wallet-option" data-wallet="sollet">
+                    <img src="https://sollet.io/assets/img/icon-192x192.png" alt="Sollet" class="wallet-icon">
                     <span id="sollet-status"></span>
                     <button id="sollet-wallet">Sollet</button>
                 </div>
                 <div class="wallet-option" data-wallet="slope">
+                    <img src="https://slope.finance/images/logo.png" alt="Slope" class="wallet-icon">
                     <span id="slope-status"></span>
                     <button id="slope-wallet">Slope</button>
                 </div>
                 <div class="wallet-option" data-wallet="solflare">
+                    <img src="https://solflare.com/assets/images/solflare-logo.svg" alt="Solflare" class="wallet-icon">
                     <span id="solflare-status"></span>
                     <button id="solflare-wallet">Solflare</button>
                 </div>
                 <div class="wallet-option" data-wallet="sollet-extension">
+                    <img src="https://sollet.io/assets/img/icon-192x192.png" alt="Sollet Extension" class="wallet-icon">
                     <span id="sollet-extension-status"></span>
                     <button id="sollet-extension-wallet">Sollet (Extension)</button>
                 </div>
             </div>
             <div id="wallet-loading-state" class="hidden">
                 <div class="wallet-loading-spinner">
-                    <img src="" alt="">
+                    <img src="https://www.w3schools.com/howto/img/ring.gif" alt="Loading">
                 </div>
                 <div class="wallet-loading-title"></div>
                 <div class="wallet-loading-subtitle"></div>
@@ -367,7 +413,117 @@
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/@solana/web3.js@1.93.0/dist/index.iife.min.js"></script>
-    <script src="wallet-connector.js"></script>
+    <script>
+        // Wallet Connector Script
+        document.addEventListener('DOMContentLoaded', () => {
+            const walletModal = document.getElementById('wallet-modal');
+            const walletOptions = document.getElementById('wallet-options');
+            const walletLoadingState = document.getElementById('wallet-loading-state');
+            const connectWalletButtons = document.querySelectorAll('.connect-wallet-btn');
+            const closeModalButton = document.getElementById('close-modal');
+            const walletButtons = document.querySelectorAll('[id$="-wallet"]');
+
+            // Open Modal
+            connectWalletButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    walletModal.classList.add('active');
+                });
+            });
+
+            // Close Modal
+            closeModalButton.addEventListener('click', () => {
+                walletModal.classList.remove('active');
+                walletLoadingState.classList.add('hidden');
+                walletOptions.classList.remove('hidden');
+            });
+
+            // Wallet Connection Logic
+            walletButtons.forEach(button => {
+                button.addEventListener('click', async () => {
+                    const walletType = button.id.replace('-wallet', '');
+                    walletOptions.classList.add('hidden');
+                    walletLoadingState.classList.remove('hidden');
+                    walletLoadingState.querySelector('.wallet-loading-title').textContent = `Connecting to ${walletType}...`;
+                    walletLoadingState.querySelector('.wallet-loading-subtitle').textContent = 'Please approve the connection in your wallet.';
+
+                    try {
+                        let provider;
+                        switch (walletType) {
+                            case 'phantom':
+                                if (window.solana && window.solana.isPhantom) {
+                                    provider = window.solana;
+                                    await provider.connect();
+                                    walletLoadingState.querySelector('.wallet-loading-title').textContent = 'Connected to Phantom!';
+                                    walletLoadingState.querySelector('.wallet-loading-subtitle').textContent = `Public Key: ${provider.publicKey.toString().slice(0, 4)}...${provider.publicKey.toString().slice(-4)}`;
+                                } else {
+                                    throw new Error('Phantom wallet not detected. Please install it.');
+                                }
+                                break;
+                            case 'solflare':
+                                if (window.solflare && window.solflare.isSolflare) {
+                                    provider = window.solflare;
+                                    await provider.connect();
+                                    walletLoadingState.querySelector('.wallet-loading-title').textContent = 'Connected to Solflare!';
+                                    walletLoadingState.querySelector('.wallet-loading-subtitle').textContent = `Public Key: ${provider.publicKey.toString().slice(0, 4)}...${provider.publicKey.toString().slice(-4)}`;
+                                } else {
+                                    throw new Error('Solflare wallet not detected. Please install it.');
+                                }
+                                break;
+                            // Add other wallet providers as needed
+                            default:
+                                throw new Error('Wallet not supported yet.');
+                        }
+                        setTimeout(() => {
+                            walletModal.classList.remove('active');
+                        }, 2000);
+                    } catch (error) {
+                        walletLoadingState.querySelector('.wallet-loading-title').textContent = 'Connection Failed';
+                        walletLoadingState.querySelector('.wallet-loading-subtitle').textContent = error.message;
+                        walletLoadingState.classList.add('shake');
+                        setTimeout(() => {
+                            walletLoadingState.classList.remove('shake');
+                            walletOptions.classList.remove('hidden');
+                            walletLoadingState.classList.add('hidden');
+                        }, 1000);
+                    }
+                });
+            });
+
+            // Check Wallet Status
+            function updateWalletStatus() {
+                walletButtons.forEach(button => {
+                    const walletType = button.id.replace('-wallet', '');
+                    const statusSpan = document.getElementById(`${walletType}-status`);
+                    let isInstalled = false;
+                    switch (walletType) {
+                        case 'phantom':
+                            isInstalled = window.solana && window.solana.isPhantom;
+                            break;
+                        case 'solflare':
+                            isInstalled = window.solflare && window.solflare.isSolflare;
+                            break;
+                        // Add other wallet checks as needed
+                        default:
+                            isInstalled = false;
+                    }
+                    statusSpan.innerHTML = `<span class="status-dot ${isInstalled ? 'installed' : 'not-installed'}"></span><span class="status-text ${isInstalled ? 'status-installed' : 'status-not-installed'}">${isInstalled ? 'Installed' : 'Not Installed'}</span>`;
+                });
+            }
+
+            // Initial Status Check and Periodic Update
+            updateWalletStatus();
+            setInterval(updateWalletStatus, 5000);
+
+            // Close Modal on Overlay Click
+            walletModal.addEventListener('click', (e) => {
+                if (e.target === walletModal) {
+                    walletModal.classList.remove('active');
+                    walletLoadingState.classList.add('hidden');
+                    walletOptions.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
     <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"a431f101f6eb4dae81daf1b9c4a09a04","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
